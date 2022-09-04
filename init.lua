@@ -1,10 +1,7 @@
 --- === SlackNotifier ===
 ---
---- Check Slack API periodically and provide a count of unread DMs and mentions
---- in a menubar app. This spoon requires a Slack legacy app token to be
---- provided to the :start method:
----
---- https://api.slack.com/legacy/custom-integrations/legacy-tokens
+--- Check Slack app badge periodically and provide a count of unread DMs and mentions
+--- in a menubar app.
 
 -- luacheck: globals hs
 
@@ -12,7 +9,7 @@ local obj = {}
 
 -- Metadata
 obj.name = 'SlackNotifier'
-obj.version = '1.0'
+obj.version = '2.0'
 obj.author = 'Chris Zarate <chris@zarate.org>'
 obj.homepage = 'https://github.com/chriszarate/SlackNotifier.spoon'
 obj.license = 'MIT - https://opensource.org/licenses/MIT'
@@ -45,40 +42,24 @@ end
 
 -- update the menu bar
 local function updateCount(count)
-	if count > 0 then
-		obj.menu:setTitle(count)
-	else
+	if count == '0' then
 		obj.menu:setTitle('')
+	else
+		obj.menu:setTitle(count)
 	end
 end
 
--- process the response
-local function onResponse(status, body)
-	if status < 0 then
-		return
-	end
-
-	-- parse json response
-	local json = hs.json.decode(body)
-	local count = 0
-
-	-- loop through channels and add up mention_count
-	for _, channel in pairs(json.channels) do
-		count = count + channel.mention_count
-	end
-
-	-- loop through dms and add up dm_count
-	for _, dm in pairs(json.ims) do
-		count = count + dm.dm_count
-	end
-
-	-- update the menu bar
-	updateCount(count)
-end
-
--- timer callback, fetch response
+-- timer callback, fetch badge
 local function onInterval()
-	hs.http.asyncGet(obj.fetchUrl, nil, onResponse)
+  local dock = hs.axuielement.applicationElement('Dock'):attributeValue('AXChildren')
+
+  for _, v in pairs(dock[1].AXChildren) do
+    if v:attributeValue('AXTitle') == 'Slack' then
+      local count = v:attributeValue('AXStatusLabel') or '0'
+			updateCount(count)
+      break
+    end
+  end
 end
 
 --- SlackNotifier:start(config)
@@ -87,20 +68,12 @@ end
 ---
 --- Parameters:
 ---  * config - A table containing config values:
---              interval: Interval in seconds to refresh the menu (default 60)
---              token:    Slack legacy API token (required)
+--              interval: Interval in seconds to refresh the menu (default 1)
 ---
 --- Returns:
 ---  * self (allow chaining)
 function obj:start(config)
-	if s == nil or s == '' then
-		return self
-	end
-
-	local interval = config.interval or 60
-
-	-- https://api.slack.com/legacy/custom-integrations/legacy-tokens
-	self.fetchUrl = 'https://slack.com/api/users.counts?token=' .. config.token
+	local interval = config.interval or 1
 
 	-- create menubar (or restore it)
 	if self.menu then
@@ -114,7 +87,6 @@ function obj:start(config)
 	self.timer:start()
 
 	-- fetch immediately, too
-	updateCount(0)
 	onInterval()
 
 	return self

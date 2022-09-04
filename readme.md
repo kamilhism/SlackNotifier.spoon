@@ -1,6 +1,8 @@
-# Hammerspoon Slack notifier
+# Hammerspoon Slack notifier (without token)
 
-Check the Slack API periodically and provide a count of unread DMs and mentions
+This fork doesn't use Slack API, it just checks launched Slack app's icon badge and shows it in a menubar.
+
+Check the Slack app badge periodically and provide a count of unread DMs and mentions
 in a menubar app. Click on the menubar icon to open Slack.
 
 ![screenshot](https://zthings.files.wordpress.com/2020/02/screen-shot-2020-02-09-at-11.17.33-pm.png)
@@ -14,12 +16,9 @@ Now load the spoon from your Hammerspoon config:
 
 ```lua
 hs.loadSpoon('SlackNotifier')
-spoon.SlackNotifier:start({token = "xoxp-xxxx"})
+spoon.SlackNotifier:start({})
 ```
 
 # Configuration
 
 - `interval`: Interval in seconds to refresh the menu (default 60)
-- `token`: [Slack legacy API token][token] (required)
-
-[token]: https://api.slack.com/legacy/custom-integrations/legacy-tokens
